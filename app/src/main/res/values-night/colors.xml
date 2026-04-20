@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="purple_200">#FFC4C1FF</color>
+    <color name="purple_500">#FF948DFF</color>
+    <color name="purple_700">#FF6D67E6</color>
+    <color name="teal_200">#FF7DEEDF</color>
+    <color name="teal_700">#FF35B5A6</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="brand_primary">#FF948DFF</color>
+    <color name="brand_primary_dark">#FF6D67E6</color>
+    <color name="brand_secondary">#FF7DEEDF</color>
+    <color name="screen_background">#FF111425</color>
+    <color name="screen_background_end">#FF181C31</color>
+    <color name="card_surface">#FF1B2138</color>
+    <color name="input_surface">#FF242B47</color>
+    <color name="text_primary">#FFF4F5FF</color>
+    <color name="text_secondary">#FFB5BCD8</color>
+    <color name="status_success">#FF81C995</color>
+    <color name="status_error">#FFFF8A80</color>
+    <color name="outline_soft">#FF313A5E</color>
+    <color name="link_chip_start">#FF252D4B</color>
+    <color name="link_chip_end">#FF2A3455</color>
+    <color name="badge_start">#FF2A3152</color>
+    <color name="badge_end">#FF353E69</color>
+    <color name="option_surface">#FF232A46</color>
+    <color name="option_surface_selected">#FF312F63</color>
+    <color name="option_surface_correct">#FF233B2A</color>
+    <color name="option_surface_wrong">#FF472428</color>
+    <color name="option_stroke">#FF394268</color>
+    <color name="option_stroke_selected">#FF948DFF</color>
+    <color name="option_stroke_correct">#FF81C995</color>
+    <color name="option_stroke_wrong">#FFFF8A80</color>
+</resources>
+

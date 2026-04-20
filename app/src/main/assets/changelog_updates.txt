@@ -1,0 +1,7 @@
+Added Home screen with category selection for study mode.
+Moved API key input to Home screen and auto-save on focus loss.
+Added support for PDF, DOCX, and PPTX uploads.
+Improved PPTX handling by extracting slide text before generation.
+Added back navigation from quiz setup screen to Home.
+Added Flash Cards mode with dedicated setup and generation screen.
+
