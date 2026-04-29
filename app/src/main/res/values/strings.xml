@@ -112,4 +112,6 @@ Correct answer: %2$s</string>
     <string name="update_download_apk">Download APK</string>
     <string name="update_view_release">View Release</string>
     <string name="update_dismiss">Dismiss</string>
+    <string name="update_check_failed">Unable to check for updates right now.</string>
+    <string name="update_check_failed_with_reason">Unable to check for updates: %1$s</string>
 </resources>

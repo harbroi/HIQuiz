@@ -8,6 +8,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -33,6 +34,7 @@ import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
 
+    private static final String TAG = "HomeActivity";
     private static final String CHANGELOG_ASSET_FILE = "changelog_updates.txt";
     private static final int ABOUT_UPDATES_LIMIT = 5;
 
@@ -47,6 +49,9 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvEmptyHistory;
     private TextView tvAboutVersion;
     private TextView tvAboutLatestUpdates;
+    private boolean updateCheckInProgress;
+    private boolean updateCheckCompleted;
+    private boolean updateDialogShown;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,8 +103,7 @@ public class HomeActivity extends AppCompatActivity {
         etApiKey.setText(preferencesManager.getApiKey());
 
         showSection(sectionHome);
-        showChangelogIfNeeded();
-        checkForAppUpdate();
+        showChangelogIfNeeded(this::checkForAppUpdate);
     }
 
     @Override
@@ -111,6 +115,7 @@ public class HomeActivity extends AppCompatActivity {
         if (sectionHistory != null && sectionHistory.getVisibility() == View.VISIBLE) {
             renderHistory();
         }
+        checkForAppUpdate();
     }
 
     @Override
@@ -217,10 +222,13 @@ public class HomeActivity extends AppCompatActivity {
         tvAboutLatestUpdates.setText(builder.toString());
     }
 
-    private void showChangelogIfNeeded() {
+    private void showChangelogIfNeeded(Runnable onComplete) {
         String currentVersionToken = getCurrentVersionToken();
         String lastSeenVersion = preferencesManager.getLastSeenChangelogVersion();
         if (currentVersionToken.equals(lastSeenVersion)) {
+            if (onComplete != null) {
+                onComplete.run();
+            }
             return;
         }
 
@@ -234,6 +242,9 @@ public class HomeActivity extends AppCompatActivity {
                 .setPositiveButton(R.string.changelog_close, (dialog, which) -> {
                     preferencesManager.saveLastSeenChangelogVersion(currentVersionToken);
                     dialog.dismiss();
+                    if (onComplete != null) {
+                        onComplete.run();
+                    }
                 })
                 .show();
     }
@@ -268,10 +279,21 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void checkForAppUpdate() {
+        if (updateCheckCompleted || updateCheckInProgress || updateDialogShown) {
+            return;
+        }
+        updateCheckInProgress = true;
+
         GitHubUpdateChecker.checkForUpdate(this, new GitHubUpdateChecker.UpdateListener() {
             @Override
             public void onUpdateAvailable(String latestVersion, String releaseUrl, String changelog, String apkUrl) {
+                updateCheckInProgress = false;
+                updateCheckCompleted = true;
+                if (updateDialogShown) {
+                    return;
+                }
                 if (isFinishing() || isDestroyed()) return;
+                updateDialogShown = true;
 
                 // Build the dialog message: version header + changelog body
                 StringBuilder message = new StringBuilder();
@@ -279,6 +301,8 @@ public class HomeActivity extends AppCompatActivity {
                 if (!changelog.isEmpty()) {
                     message.append("\n\n").append(getString(R.string.update_whats_new)).append("\n");
                     message.append(changelog);
+                } else {
+                    message.append("\n\n").append(getString(R.string.changelog_empty));
                 }
 
                 new MaterialAlertDialogBuilder(HomeActivity.this)
@@ -298,12 +322,21 @@ public class HomeActivity extends AppCompatActivity {
 
             @Override
             public void onNoUpdate() {
-                // Already on the latest version – nothing to do
+                updateCheckInProgress = false;
+                updateCheckCompleted = true;
             }
 
             @Override
-            public void onError() {
-                // Network unavailable or API error – silently ignore
+            public void onError(int statusCode, String message) {
+                updateCheckInProgress = false;
+                String detail = (message == null || message.isEmpty()) ? "Unknown error" : message;
+                String reason = statusCode > 0 ? "HTTP " + statusCode + ": " + detail : detail;
+                Log.w(TAG, "Update check failed - " + reason);
+                Toast.makeText(
+                        HomeActivity.this,
+                        getString(R.string.update_check_failed_with_reason, reason),
+                        Toast.LENGTH_LONG
+                ).show();
             }
         });
     }

@@ -1,3 +1,7 @@
+import java.text.SimpleDateFormat
+import java.util.Date
+
+val date = SimpleDateFormat("yyyyMMdd").format(Date())
 plugins {
     alias(libs.plugins.android.application)
 }
@@ -12,10 +16,18 @@ android {
         applicationId = "net.harbroi.quizgenerator"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "2.1.2"
+        versionCode = 7
+        versionName = "2.1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    applicationVariants.all {
+        val variantName = name
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.ApkVariantOutputImpl
+            output.outputFileName = "HIQuiz_v${defaultConfig.versionName}_${date}_$variantName.apk"
+        }
     }
 
     buildTypes {

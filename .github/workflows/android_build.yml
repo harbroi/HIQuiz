@@ -27,16 +27,19 @@ jobs:
     - name: Extract version name
       id: version
       run: |
-        VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
+        VERSION_NAME=$(grep 'versionName =' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+    # Changed from assembleDebug to assembleRelease
+    - name: Build Release APK
+      run: ./gradlew assembleRelease
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master')
       with:
         tag_name: v${{ steps.version.outputs.version_name }}
         name: QuizGenerator v${{ steps.version.outputs.version_name }}
-        files: app/build/outputs/apk/debug/*.apk
+        # Updated path to the release folder
+        files: app/build/outputs/apk/release/*.apk
         token: ${{ secrets.GITHUB_TOKEN }}
