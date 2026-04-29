@@ -36,6 +36,7 @@ public class HomeActivity extends AppCompatActivity {
 
     private static final String TAG = "HomeActivity";
     private static final String CHANGELOG_ASSET_FILE = "changelog_updates.txt";
+    private static final String LEGACY_CHANGELOG_ASSET_FILE = "changelog_updated.txt";
     private static final int ABOUT_UPDATES_LIMIT = 5;
 
     private QuizPreferencesManager preferencesManager;
@@ -262,7 +263,16 @@ public class HomeActivity extends AppCompatActivity {
 
     private List<String> readChangelogItems() {
         List<String> items = new ArrayList<>();
-        try (InputStream inputStream = getAssets().open(CHANGELOG_ASSET_FILE);
+
+        if (!readChangelogFromAsset(CHANGELOG_ASSET_FILE, items)) {
+            readChangelogFromAsset(LEGACY_CHANGELOG_ASSET_FILE, items);
+        }
+
+        return items;
+    }
+
+    private boolean readChangelogFromAsset(String assetFileName, List<String> items) {
+        try (InputStream inputStream = getAssets().open(assetFileName);
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -271,11 +281,11 @@ public class HomeActivity extends AppCompatActivity {
                     items.add(trimmed);
                 }
             }
+            return true;
         } catch (IOException exception) {
             items.clear();
+            return false;
         }
-
-        return items;
     }
 
     private void checkForAppUpdate() {
@@ -298,9 +308,15 @@ public class HomeActivity extends AppCompatActivity {
                 // Build the dialog message: version header + changelog body
                 StringBuilder message = new StringBuilder();
                 message.append(getString(R.string.update_available_version, latestVersion));
-                if (!changelog.isEmpty()) {
+                List<String> localChangelogItems = readChangelogItems();
+                if (!localChangelogItems.isEmpty()) {
                     message.append("\n\n").append(getString(R.string.update_whats_new)).append("\n");
-                    message.append(changelog);
+                    for (int index = 0; index < localChangelogItems.size(); index++) {
+                        message.append("- ").append(localChangelogItems.get(index));
+                        if (index < localChangelogItems.size() - 1) {
+                            message.append("\n");
+                        }
+                    }
                 } else {
                     message.append("\n\n").append(getString(R.string.changelog_empty));
                 }
