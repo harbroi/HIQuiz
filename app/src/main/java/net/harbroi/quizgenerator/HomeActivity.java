@@ -99,6 +99,7 @@ public class HomeActivity extends AppCompatActivity {
 
         showSection(sectionHome);
         showChangelogIfNeeded();
+        checkForAppUpdate();
     }
 
     @Override
@@ -264,6 +265,34 @@ public class HomeActivity extends AppCompatActivity {
         }
 
         return items;
+    }
+
+    private void checkForAppUpdate() {
+        GitHubUpdateChecker.checkForUpdate(this, new GitHubUpdateChecker.UpdateListener() {
+            @Override
+            public void onUpdateAvailable(String latestVersion, String releaseUrl) {
+                if (isFinishing() || isDestroyed()) return;
+                new MaterialAlertDialogBuilder(HomeActivity.this)
+                        .setTitle(R.string.update_available_title)
+                        .setMessage(getString(R.string.update_available_message, latestVersion))
+                        .setPositiveButton(R.string.update_view_release, (dialog, which) -> {
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(releaseUrl));
+                            startActivity(intent);
+                        })
+                        .setNegativeButton(R.string.update_dismiss, null)
+                        .show();
+            }
+
+            @Override
+            public void onNoUpdate() {
+                // Already on the latest version – nothing to do
+            }
+
+            @Override
+            public void onError() {
+                // Network unavailable or API error – silently ignore
+            }
+        });
     }
 
     private String buildChangelogMessage(String currentVersionToken, List<String> changelogItems) {

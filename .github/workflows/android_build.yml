@@ -7,6 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout Code
@@ -22,11 +24,19 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    - name: Build Release Bundle
-      run: ./gradlew bundleRelease
+    - name: Extract version name
+      id: version
+      run: |
+        VERSION_NAME=$(grep 'versionName' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
+        echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
 
-    - name: Upload Finished Bundle
-      uses: actions/upload-artifact@v4
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
       with:
-        name: QuizGenerator-v${{ github.run_number }}
-        path: app/build/outputs/bundle/release/*.aab
+        tag_name: v${{ steps.version.outputs.version_name }}
+        name: QuizGenerator v${{ steps.version.outputs.version_name }}
+        files: app/build/outputs/apk/debug/*.apk
+        token: ${{ secrets.GITHUB_TOKEN }}

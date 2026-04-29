@@ -106,4 +106,8 @@ Correct answer: %2$s</string>
     <string name="flash_hide_answer">Hide Answer</string>
     <string name="flash_next_question">Next Question</string>
     <string name="flash_back_to_activity">Back to Flash Activity</string>
+    <string name="update_available_title">Update Available</string>
+    <string name="update_available_message">Version %1$s is now available on GitHub. Download it to get the latest features and fixes.</string>
+    <string name="update_view_release">View Release</string>
+    <string name="update_dismiss">Dismiss</string>
 </resources>
