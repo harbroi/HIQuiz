@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
@@ -19,7 +20,7 @@ public class GitHubUpdateChecker {
             "https://api.github.com/repos/harbroi/HIQuiz/releases/latest";
 
     public interface UpdateListener {
-        void onUpdateAvailable(String latestVersion, String releaseUrl);
+        void onUpdateAvailable(String latestVersion, String releaseUrl, String changelog, String apkUrl);
         void onNoUpdate();
         void onError();
     }
@@ -58,12 +59,30 @@ public class GitHubUpdateChecker {
                 JSONObject json = new JSONObject(response.toString());
                 String tagName = json.optString("tag_name", "");
                 String htmlUrl = json.optString("html_url", "");
+                String body = json.optString("body", "").trim();
 
                 // Strip leading 'v' prefix from tag (e.g. "v2.1" → "2.1")
                 String latestVersion = tagName.startsWith("v") ? tagName.substring(1) : tagName;
 
+                // Find the APK asset download URL, fall back to release page URL
+                String apkUrl = htmlUrl;
+                JSONArray assets = json.optJSONArray("assets");
+                if (assets != null) {
+                    for (int i = 0; i < assets.length(); i++) {
+                        JSONObject asset = assets.optJSONObject(i);
+                        if (asset != null) {
+                            String name = asset.optString("name", "");
+                            if (name.toLowerCase().endsWith(".apk")) {
+                                apkUrl = asset.optString("browser_download_url", htmlUrl);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                final String finalApkUrl = apkUrl;
                 if (!latestVersion.isEmpty() && !latestVersion.equals(currentVersion)) {
-                    mainHandler.post(() -> listener.onUpdateAvailable(latestVersion, htmlUrl));
+                    mainHandler.post(() -> listener.onUpdateAvailable(latestVersion, htmlUrl, body, finalApkUrl));
                 } else {
                     mainHandler.post(listener::onNoUpdate);
                 }

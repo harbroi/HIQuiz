@@ -270,12 +270,25 @@ public class HomeActivity extends AppCompatActivity {
     private void checkForAppUpdate() {
         GitHubUpdateChecker.checkForUpdate(this, new GitHubUpdateChecker.UpdateListener() {
             @Override
-            public void onUpdateAvailable(String latestVersion, String releaseUrl) {
+            public void onUpdateAvailable(String latestVersion, String releaseUrl, String changelog, String apkUrl) {
                 if (isFinishing() || isDestroyed()) return;
+
+                // Build the dialog message: version header + changelog body
+                StringBuilder message = new StringBuilder();
+                message.append(getString(R.string.update_available_version, latestVersion));
+                if (!changelog.isEmpty()) {
+                    message.append("\n\n").append(getString(R.string.update_whats_new)).append("\n");
+                    message.append(changelog);
+                }
+
                 new MaterialAlertDialogBuilder(HomeActivity.this)
                         .setTitle(R.string.update_available_title)
-                        .setMessage(getString(R.string.update_available_message, latestVersion))
-                        .setPositiveButton(R.string.update_view_release, (dialog, which) -> {
+                        .setMessage(message.toString())
+                        .setPositiveButton(R.string.update_download_apk, (dialog, which) -> {
+                            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(apkUrl));
+                            startActivity(intent);
+                        })
+                        .setNeutralButton(R.string.update_view_release, (dialog, which) -> {
                             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(releaseUrl));
                             startActivity(intent);
                         })
