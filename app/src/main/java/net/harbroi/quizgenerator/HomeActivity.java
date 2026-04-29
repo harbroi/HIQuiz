@@ -1,11 +1,18 @@
 package net.harbroi.quizgenerator;
 
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.pm.PackageInfoCompat;
@@ -19,79 +26,199 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class HomeActivity extends AppCompatActivity {
 
-    private static final String PREFS_NAME = "quiz_generator_prefs";
-    private static final String PREF_API_KEY = "pref_api_key";
-    private static final String PREF_LAST_SEEN_CHANGELOG_VERSION = "pref_last_seen_changelog_version";
     private static final String CHANGELOG_ASSET_FILE = "changelog_updates.txt";
+    private static final int ABOUT_UPDATES_LIMIT = 5;
 
+    private QuizPreferencesManager preferencesManager;
+
+    private LinearLayout sectionHome;
+    private LinearLayout sectionSettings;
+    private LinearLayout sectionHistory;
+    private LinearLayout sectionAbout;
     private TextInputEditText etApiKey;
+    private LinearLayout llHistoryItems;
+    private TextView tvEmptyHistory;
+    private TextView tvAboutVersion;
+    private TextView tvAboutLatestUpdates;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        preferencesManager = new QuizPreferencesManager(this);
+
+        sectionHome = findViewById(R.id.sectionHome);
+        sectionSettings = findViewById(R.id.sectionSettings);
+        sectionHistory = findViewById(R.id.sectionHistory);
+        sectionAbout = findViewById(R.id.sectionAbout);
         etApiKey = findViewById(R.id.etApiKey);
+        llHistoryItems = findViewById(R.id.llHistoryItems);
+        tvEmptyHistory = findViewById(R.id.tvEmptyHistory);
+        tvAboutVersion = findViewById(R.id.tvAboutVersion);
+        tvAboutLatestUpdates = findViewById(R.id.tvAboutLatestUpdates);
+        TextView tvAiStudioLink = findViewById(R.id.tvAiStudioLink);
+        MaterialButton btnSaveApiKey = findViewById(R.id.btnSaveApiKey);
+
         MaterialButton btnMultipleChoice = findViewById(R.id.btnMultipleChoice);
         MaterialButton btnFlashCards = findViewById(R.id.btnFlashCards);
+        MaterialButton navHome = findViewById(R.id.navHome);
+        MaterialButton navSettings = findViewById(R.id.navSettings);
+        MaterialButton navHistory = findViewById(R.id.navHistory);
+        MaterialButton navAbout = findViewById(R.id.navAbout);
 
-        restoreApiKey();
+        btnMultipleChoice.setOnClickListener(v -> startActivity(new Intent(this, MainActivity.class)));
+        btnFlashCards.setOnClickListener(v -> startActivity(new Intent(this, FlashActivity.class)));
+
+        navHome.setOnClickListener(v -> showSection(sectionHome));
+        navSettings.setOnClickListener(v -> showSection(sectionSettings));
+        navHistory.setOnClickListener(v -> {
+            showSection(sectionHistory);
+            renderHistory();
+        });
+        navAbout.setOnClickListener(v -> {
+            showSection(sectionAbout);
+            tvAboutVersion.setText("Version: " + getCurrentVersionToken());
+            renderAboutLatestUpdates();
+        });
+
+        tvAiStudioLink.setOnClickListener(v -> openAiStudioLink());
+        btnSaveApiKey.setOnClickListener(v -> {
+            saveApiKey();
+            Toast.makeText(this, R.string.api_key_saved, Toast.LENGTH_SHORT).show();
+        });
+
+        etApiKey.setText(preferencesManager.getApiKey());
+
+        showSection(sectionHome);
         showChangelogIfNeeded();
-
-        etApiKey.setOnFocusChangeListener((View v, boolean hasFocus) -> {
-            if (!hasFocus) {
-                saveApiKey();
-            }
-        });
-
-        btnMultipleChoice.setOnClickListener(v -> {
-            saveApiKey();
-            startActivity(new Intent(this, MainActivity.class));
-        });
-
-        btnFlashCards.setOnClickListener(v -> {
-            saveApiKey();
-            startActivity(new Intent(this, FlashActivity.class));
-        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (etApiKey != null && !etApiKey.hasFocus()) {
-            restoreApiKey();
+            etApiKey.setText(preferencesManager.getApiKey());
         }
+        if (sectionHistory != null && sectionHistory.getVisibility() == View.VISIBLE) {
+            renderHistory();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    private void showSection(View target) {
+        sectionHome.setVisibility(target == sectionHome ? View.VISIBLE : View.GONE);
+        sectionSettings.setVisibility(target == sectionSettings ? View.VISIBLE : View.GONE);
+        sectionHistory.setVisibility(target == sectionHistory ? View.VISIBLE : View.GONE);
+        sectionAbout.setVisibility(target == sectionAbout ? View.VISIBLE : View.GONE);
     }
 
     private void saveApiKey() {
         if (etApiKey == null) {
             return;
         }
-
-        getQuizPreferences().edit().putString(PREF_API_KEY, getTrimmedText(etApiKey)).apply();
+        String value = etApiKey.getText() == null ? "" : etApiKey.getText().toString();
+        preferencesManager.saveApiKey(value);
     }
 
-    private void restoreApiKey() {
-        if (etApiKey == null) {
+    private void renderHistory() {
+        llHistoryItems.removeAllViews();
+        ArrayList<QuizAttempt> attempts = new QuizAttemptStore(this).getAttempts();
+        if (attempts.isEmpty()) {
+            tvEmptyHistory.setVisibility(View.VISIBLE);
             return;
         }
 
-        String savedApiKey = getQuizPreferences().getString(PREF_API_KEY, "");
-        String currentText = etApiKey.getText() == null ? "" : etApiKey.getText().toString();
-        if (!savedApiKey.equals(currentText)) {
-            etApiKey.setText(savedApiKey);
-            etApiKey.setSelection(savedApiKey.length());
+        tvEmptyHistory.setVisibility(View.GONE);
+        LayoutInflater inflater = LayoutInflater.from(this);
+        DateFormat dateFormat = android.text.format.DateFormat.getMediumDateFormat(this);
+        DateFormat timeFormat = android.text.format.DateFormat.getTimeFormat(this);
+
+        for (QuizAttempt attempt : attempts) {
+            View item = inflater.inflate(R.layout.item_history_attempt, llHistoryItems, false);
+            TextView tvCategory = item.findViewById(R.id.tvHistoryCategory);
+            TextView tvFiles = item.findViewById(R.id.tvHistoryFiles);
+            TextView tvQuestions = item.findViewById(R.id.tvHistoryQuestionCount);
+            TextView tvScore = item.findViewById(R.id.tvHistoryScore);
+            TextView tvDate = item.findViewById(R.id.tvHistoryDate);
+
+            Date dateTaken = new Date(attempt.getDateTakenMillis());
+            String dateText = dateFormat.format(dateTaken) + " " + timeFormat.format(dateTaken);
+
+            tvCategory.setText("Category: " + attempt.getCategory());
+            tvFiles.setText("Files used: " + joinFiles(attempt.getFilesUsed()));
+            tvQuestions.setText("Number of questions: " + attempt.getQuestionCount());
+            tvScore.setText("Score: " + attempt.getCorrectCount() + "/" + attempt.getQuestionCount()
+                    + " (" + attempt.getPercentage() + "%) - Wrong: " + attempt.getWrongCount());
+            tvDate.setText("Date taken: " + dateText);
+
+            llHistoryItems.addView(item);
         }
+    }
+
+    private String joinFiles(ArrayList<String> files) {
+        if (files == null || files.isEmpty()) {
+            return "No files recorded";
+        }
+        return android.text.TextUtils.join(", ", files);
+    }
+
+    private void openAiStudioLink() {
+        String url = getString(R.string.ai_studio_url);
+        Uri uri = Uri.parse(url);
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        intent.addCategory(Intent.CATEGORY_BROWSABLE);
+
+        try {
+            startActivity(Intent.createChooser(intent, getString(R.string.open_link_chooser_title)));
+        } catch (ActivityNotFoundException exception) {
+            ClipboardManager clipboardManager = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+            if (clipboardManager != null) {
+                clipboardManager.setPrimaryClip(ClipData.newPlainText("AI Studio URL", url));
+                Toast.makeText(this, R.string.error_open_link_copied, Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, R.string.error_open_link_unavailable, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void renderAboutLatestUpdates() {
+        if (tvAboutLatestUpdates == null) {
+            return;
+        }
+
+        List<String> changelogItems = readChangelogItems();
+        if (changelogItems.isEmpty()) {
+            tvAboutLatestUpdates.setText(R.string.changelog_empty);
+            return;
+        }
+
+        int maxCount = Math.min(ABOUT_UPDATES_LIMIT, changelogItems.size());
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < maxCount; index++) {
+            builder.append("• ").append(changelogItems.get(index));
+            if (index < maxCount - 1) {
+                builder.append("\n");
+            }
+        }
+
+        tvAboutLatestUpdates.setText(builder.toString());
     }
 
     private void showChangelogIfNeeded() {
         String currentVersionToken = getCurrentVersionToken();
-        String lastSeenVersion = getQuizPreferences().getString(PREF_LAST_SEEN_CHANGELOG_VERSION, "");
+        String lastSeenVersion = preferencesManager.getLastSeenChangelogVersion();
         if (currentVersionToken.equals(lastSeenVersion)) {
             return;
         }
@@ -104,9 +231,7 @@ public class HomeActivity extends AppCompatActivity {
                 .setMessage(message)
                 .setCancelable(false)
                 .setPositiveButton(R.string.changelog_close, (dialog, which) -> {
-                    getQuizPreferences().edit()
-                            .putString(PREF_LAST_SEEN_CHANGELOG_VERSION, currentVersionToken)
-                            .apply();
+                    preferencesManager.saveLastSeenChangelogVersion(currentVersionToken);
                     dialog.dismiss();
                 })
                 .show();
@@ -159,13 +284,4 @@ public class HomeActivity extends AppCompatActivity {
         }
         return builder.toString();
     }
-
-    private String getTrimmedText(TextInputEditText editText) {
-        return editText.getText() == null ? "" : editText.getText().toString().trim();
-    }
-
-    private SharedPreferences getQuizPreferences() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-    }
 }
-

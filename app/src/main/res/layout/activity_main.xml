@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:background="@drawable/bg_main_gradient"
     android:fillViewport="true"
+    android:fitsSystemWindows="true"
     android:scrollbars="none">
 
     <LinearLayout
@@ -213,7 +214,7 @@
                         android:layout_height="wrap_content"
                         android:digits="0123456789"
                         android:inputType="number"
-                        android:maxLength="2"
+                        android:maxLength="3"
                         android:text="@string/question_count_default"
                         android:textColor="@color/text_primary"
                         android:textColorHint="@color/text_secondary" />
@@ -260,4 +261,3 @@
     </LinearLayout>
 
 </ScrollView>
-

@@ -1,7 +1,5 @@
-Added Home screen with category selection for study mode.
-Moved API key input to Home screen and auto-save on focus loss.
-Added support for PDF, DOCX, and PPTX uploads.
-Improved PPTX handling by extracting slide text before generation.
-Added back navigation from quiz setup screen to Home.
-Added Flash Cards mode with dedicated setup and generation screen.
-
+Added bottom navigation in Home (Home, Settings, History, About).
+Added local quiz history with category, files, score, and date tracking.
+Added Home banner image support and improved Home visual design.
+Added AI Studio API key quick link in Settings.
+Improved notch/camera-cutout safety by adding top safe spacing across screens.

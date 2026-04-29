@@ -24,6 +24,9 @@ import java.util.ArrayList;
 public class QuizActivity extends AppCompatActivity {
 
     public static final String EXTRA_QUIZ_QUESTIONS = "extra_quiz_questions";
+    public static final String EXTRA_CATEGORY = "extra_category";
+    public static final String EXTRA_FILES_USED = "extra_files_used";
+    public static final String EXTRA_REQUESTED_QUESTION_COUNT = "extra_requested_question_count";
 
     private LinearLayout llQuestionsContainer;
     private MaterialButton btnSubmitQuiz;
@@ -202,6 +205,7 @@ public class QuizActivity extends AppCompatActivity {
 
         isSubmitted = true;
         ScoreResult scoreResult = calculateScore();
+        saveAttempt(scoreResult);
 
         btnSubmitQuiz.setEnabled(false);
         btnSubmitQuiz.setText(R.string.quiz_submitted);
@@ -214,6 +218,26 @@ public class QuizActivity extends AppCompatActivity {
         summaryIntent.putExtra(SummaryActivity.EXTRA_PERCENTAGE, scoreResult.percentage);
         summaryIntent.putExtra(SummaryActivity.EXTRA_QUESTIONS, questions);
         startActivity(summaryIntent);
+    }
+
+    private void saveAttempt(ScoreResult scoreResult) {
+        String category = getIntent().getStringExtra(EXTRA_CATEGORY);
+        if (category == null || category.trim().isEmpty()) {
+            category = getString(R.string.category_multiple_choice);
+        }
+
+        ArrayList<String> filesUsed = getIntent().getStringArrayListExtra(EXTRA_FILES_USED);
+
+        QuizAttempt attempt = new QuizAttempt(
+                category,
+                filesUsed == null ? new ArrayList<>() : filesUsed,
+                scoreResult.totalCount,
+                scoreResult.correctCount,
+                scoreResult.wrongCount,
+                scoreResult.percentage,
+                System.currentTimeMillis()
+        );
+        new QuizAttemptStore(this).addAttempt(attempt);
     }
 
     private ScoreResult calculateScore() {
@@ -262,4 +286,3 @@ public class QuizActivity extends AppCompatActivity {
         }
     }
 }
-

@@ -2,7 +2,6 @@ package net.harbroi.quizgenerator;
 
 import android.content.ContentResolver;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
@@ -34,10 +33,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int MAX_NAMES_TO_SHOW = 3;
     private static final int MIN_QUESTION_COUNT = 1;
     private static final int MAX_QUESTION_COUNT = 100;
-    private static final String PREFS_NAME = "quiz_generator_prefs";
-    private static final String PREF_API_KEY = "pref_api_key";
 
     private final List<Uri> selectedFileUris = new ArrayList<>();
+    private final List<String> selectedFileNames = new ArrayList<>();
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final GeminiQuizService geminiQuizService = new GeminiQuizService();
 
@@ -50,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
     private final ActivityResultLauncher<String[]> pickDocumentsLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenMultipleDocuments(), uris -> {
                 selectedFileUris.clear();
+                selectedFileNames.clear();
                 List<String> names = new ArrayList<>();
                 Set<String> seenUris = new LinkedHashSet<>();
 
@@ -62,7 +61,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                     persistReadPermission(uri);
                     selectedFileUris.add(uri);
-                    names.add(getDisplayName(uri));
+                    String name = getDisplayName(uri);
+                    names.add(name);
+                    selectedFileNames.add(name);
                 }
 
                 updateSelectedFilesInfo(names);
@@ -130,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
 
                 runOnUiThread(() -> {
                     setGenerating(false, getString(R.string.generation_status_success), false);
-                    openQuizActivity(questions);
+                    openQuizActivity(questions, questionCount);
                 });
             } catch (Exception exception) {
                 runOnUiThread(() -> setGenerating(false, exception.getMessage(), true));
@@ -222,7 +223,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void openQuizActivity(ArrayList<QuizQuestion> questions) {
+    private void openQuizActivity(ArrayList<QuizQuestion> questions, int requestedQuestionCount) {
         if (questions == null || questions.isEmpty()) {
             setGenerating(false, getString(R.string.error_no_questions_generated), true);
             return;
@@ -230,6 +231,9 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intent = new Intent(this, QuizActivity.class);
         intent.putExtra(QuizActivity.EXTRA_QUIZ_QUESTIONS, questions);
+        intent.putExtra(QuizActivity.EXTRA_CATEGORY, getString(R.string.category_multiple_choice));
+        intent.putStringArrayListExtra(QuizActivity.EXTRA_FILES_USED, new ArrayList<>(selectedFileNames));
+        intent.putExtra(QuizActivity.EXTRA_REQUESTED_QUESTION_COUNT, requestedQuestionCount);
         startActivity(intent);
     }
 
@@ -253,8 +257,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getSavedApiKey() {
-        String savedApiKey = getQuizPreferences().getString(PREF_API_KEY, "");
-        return savedApiKey.trim();
+        return new QuizPreferencesManager(this).getApiKey();
     }
 
     private void openHomeActivity() {
@@ -263,9 +266,4 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-
-    private SharedPreferences getQuizPreferences() {
-        return getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-    }
 }
-

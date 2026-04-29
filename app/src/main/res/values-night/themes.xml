@@ -13,7 +13,7 @@
         <item name="colorOnSurface">@color/text_primary</item>
         <item name="android:colorBackground">@color/screen_background</item>
         <!-- Fullscreen for all activities using this theme. -->
-        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowFullscreen">false</item>
         <!-- Customize your theme here. -->
     </style>
 </resources>
