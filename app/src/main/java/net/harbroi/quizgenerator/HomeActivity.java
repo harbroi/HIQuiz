@@ -72,6 +72,7 @@ public class HomeActivity extends AppCompatActivity {
         tvAboutLatestUpdates = findViewById(R.id.tvAboutLatestUpdates);
         TextView tvAiStudioLink = findViewById(R.id.tvAiStudioLink);
         MaterialButton btnSaveApiKey = findViewById(R.id.btnSaveApiKey);
+        MaterialButton btnCheckUpdate = findViewById(R.id.btnCheckUpdate);
 
         MaterialButton btnMultipleChoice = findViewById(R.id.btnMultipleChoice);
         MaterialButton btnFlashCards = findViewById(R.id.btnFlashCards);
@@ -100,11 +101,12 @@ public class HomeActivity extends AppCompatActivity {
             saveApiKey();
             Toast.makeText(this, R.string.api_key_saved, Toast.LENGTH_SHORT).show();
         });
+        btnCheckUpdate.setOnClickListener(v -> checkForAppUpdate(true));
 
         etApiKey.setText(preferencesManager.getApiKey());
 
         showSection(sectionHome);
-        showChangelogIfNeeded(this::checkForAppUpdate);
+        showChangelogIfNeeded(() -> checkForAppUpdate(false));
     }
 
     @Override
@@ -116,7 +118,7 @@ public class HomeActivity extends AppCompatActivity {
         if (sectionHistory != null && sectionHistory.getVisibility() == View.VISIBLE) {
             renderHistory();
         }
-        checkForAppUpdate();
+        checkForAppUpdate(false);
     }
 
     @Override
@@ -288,10 +290,19 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private void checkForAppUpdate() {
-        if (updateCheckCompleted || updateCheckInProgress || updateDialogShown) {
+    private void checkForAppUpdate(boolean force) {
+        if (updateCheckInProgress) {
             return;
         }
+        if (!force && (updateCheckCompleted || updateDialogShown)) {
+            return;
+        }
+
+        if (force) {
+            updateCheckCompleted = false;
+            updateDialogShown = false;
+        }
+
         updateCheckInProgress = true;
 
         GitHubUpdateChecker.checkForUpdate(this, new GitHubUpdateChecker.UpdateListener() {
@@ -340,6 +351,9 @@ public class HomeActivity extends AppCompatActivity {
             public void onNoUpdate() {
                 updateCheckInProgress = false;
                 updateCheckCompleted = true;
+                if (force) {
+                    Toast.makeText(HomeActivity.this, R.string.update_no_update_message, Toast.LENGTH_SHORT).show();
+                }
             }
 
             @Override

@@ -30,9 +30,20 @@ jobs:
         VERSION_NAME=$(grep 'versionName =' app/build.gradle.kts | sed 's/.*versionName = "\(.*\)".*/\1/')
         echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
 
-    # Changed from assembleDebug to assembleRelease
     - name: Build Release APK
       run: ./gradlew assembleRelease
+
+    - name: Sign APK
+      uses: r0adkll/sign-android-release@v1
+      id: sign_app
+      with:
+        releaseDirectory: app/build/outputs/apk/release
+        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+        alias: ${{ secrets.ALIAS }}
+        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+        keyPassword: ${{ secrets.KEY_PASSWORD }}
+      env:
+        BUILD_TOOLS_VERSION: "34.0.0"
 
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
@@ -40,6 +51,6 @@ jobs:
       with:
         tag_name: v${{ steps.version.outputs.version_name }}
         name: QuizGenerator v${{ steps.version.outputs.version_name }}
-        # Updated path to the release folder
-        files: app/build/outputs/apk/release/*.apk
+        # CRITICAL: Using the signed output file from the signing step
+        files: ${{ steps.sign_app.outputs.signedReleaseFile }}
         token: ${{ secrets.GITHUB_TOKEN }}

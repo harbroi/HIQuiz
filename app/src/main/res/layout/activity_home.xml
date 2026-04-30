@@ -435,6 +435,20 @@
                             android:textSize="18sp"
                             android:textStyle="bold" />
 
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCheckUpdate"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:minHeight="48dp"
+                            android:text="@string/check_for_updates"
+                            android:textAllCaps="false"
+                            app:cornerRadius="14dp"
+                            app:icon="@drawable/ic_update_24"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+
                         <TextView
                             android:id="@+id/tvAboutLatestUpdates"
                             android:layout_width="match_parent"
