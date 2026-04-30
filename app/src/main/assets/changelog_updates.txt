@@ -3,3 +3,4 @@ Added local quiz history with category, files, score, and date tracking.
 Added Home banner image support and improved Home visual design.
 Added AI Studio API key quick link in Settings.
 Improved notch/camera-cutout safety by adding top safe spacing across screens.
+Added HIQuiz Chatbot feature for interactive quiz assistance and feedback.

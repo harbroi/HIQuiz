@@ -152,7 +152,7 @@ public class GeminiQuizService {
 
         for (String modelName : MODEL_NAMES) {
             if (statusListener != null) {
-                statusListener.onStatus("Waiting for Gemini response...");
+                statusListener.onStatus("Waiting for HIQuiz AI response...");
             }
 
             ApiResponse response = executeWithRetry(apiKey, modelName, requestJson);
@@ -161,7 +161,7 @@ public class GeminiQuizService {
                 if (!output.isEmpty()) {
                     return output;
                 }
-                throw new IOException("Gemini returned an empty response.");
+                throw new IOException("HIQuiz AI returned an empty response.");
             }
 
             if (!response.shouldRetrySameModel()) {

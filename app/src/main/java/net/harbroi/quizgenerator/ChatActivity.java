@@ -1,6 +1,11 @@
 package net.harbroi.quizgenerator;
 
 import android.os.Bundle;
+import android.graphics.Typeface;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.StyleSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -209,7 +214,9 @@ public class ChatActivity extends AppCompatActivity {
         int verticalPadding = dpToPx(12);
         textView.setPadding(horizontalPadding, verticalPadding, horizontalPadding, verticalPadding);
         textView.setMaxWidth((int) (getResources().getDisplayMetrics().widthPixels * 0.72f));
-        textView.setText(message.getText());
+        textView.setText(message.isUser()
+                ? message.getText()
+                : formatGeminiText(message.getText()));
         textView.setTextColor(ContextCompat.getColor(
                 this,
                 message.isUser() ? R.color.white : R.color.text_primary
@@ -241,6 +248,59 @@ public class ChatActivity extends AppCompatActivity {
 
     private String getEditTextValue(TextInputEditText editText) {
         return editText == null || editText.getText() == null ? "" : editText.getText().toString();
+    }
+
+    private CharSequence formatGeminiText(String rawText) {
+        String safeText = rawText == null ? "" : rawText;
+        String[] lines = safeText.split("\\r?\\n", -1);
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+
+        for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            String line = lines[lineIndex];
+            if (line.startsWith("###")) {
+                String headingText = line.substring(3).trim();
+                int start = builder.length();
+                builder.append(headingText.isEmpty() ? " " : headingText);
+                int end = builder.length();
+                builder.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                builder.setSpan(new RelativeSizeSpan(1.18f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else {
+                appendBoldSegments(builder, line);
+            }
+
+            if (lineIndex < lines.length - 1) {
+                builder.append('\n');
+            }
+        }
+
+        return builder;
+    }
+
+    private void appendBoldSegments(SpannableStringBuilder builder, String line) {
+        int cursor = 0;
+        while (cursor < line.length()) {
+            int openMarker = line.indexOf("**", cursor);
+            if (openMarker < 0) {
+                builder.append(line.substring(cursor));
+                return;
+            }
+
+            if (openMarker > cursor) {
+                builder.append(line, cursor, openMarker);
+            }
+
+            int closeMarker = line.indexOf("**", openMarker + 2);
+            if (closeMarker < 0) {
+                builder.append(line.substring(openMarker));
+                return;
+            }
+
+            int start = builder.length();
+            builder.append(line, openMarker + 2, closeMarker);
+            int end = builder.length();
+            builder.setSpan(new StyleSpan(Typeface.BOLD), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            cursor = closeMarker + 2;
+        }
     }
 
     private int dpToPx(int dp) {

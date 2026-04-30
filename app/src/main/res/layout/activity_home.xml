@@ -176,36 +176,26 @@
                     app:strokeColor="@color/outline_soft"
                     app:strokeWidth="1dp">
 
-                    <ImageView
-                        android:id="@+id/ivHomeBanner"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:adjustViewBounds="true"
-                        android:contentDescription="@string/home_banner_content_description"
-                        android:maxHeight="220dp"
-                        android:scaleType="centerInside"
-                        android:src="@drawable/harold" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="18dp"
-                    app:cardBackgroundColor="@color/card_surface"
-                    app:cardCornerRadius="24dp"
-                    app:cardElevation="0dp"
-                    app:strokeColor="@color/outline_soft"
-                    app:strokeWidth="1dp">
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="22dp">
 
+                        <ImageView
+                            android:id="@+id/ivHomeBanner"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:adjustViewBounds="true"
+                            android:contentDescription="@string/home_banner_content_description"
+                            android:maxHeight="220dp"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/harold" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
                             android:text="@string/home_chat_title"
                             android:textColor="@color/text_primary"
                             android:textSize="19sp"
@@ -260,6 +250,21 @@
                             app:icon="@drawable/ic_send_24"
                             app:iconGravity="textStart"
                             app:iconPadding="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnOpenConversation"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:minHeight="50dp"
+                            android:text="@string/home_chat_open_conversation"
+                            android:textAllCaps="false"
+                            app:cornerRadius="16dp"
+                            app:icon="@drawable/ic_update_24"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp"
+                            app:strokeColor="@color/brand_primary" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
             </LinearLayout>

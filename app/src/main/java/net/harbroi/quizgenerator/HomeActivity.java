@@ -76,6 +76,7 @@ public class HomeActivity extends AppCompatActivity {
         MaterialButton btnSaveApiKey = findViewById(R.id.btnSaveApiKey);
         MaterialButton btnCheckUpdate = findViewById(R.id.btnCheckUpdate);
         MaterialButton btnOpenChat = findViewById(R.id.btnOpenChat);
+        MaterialButton btnOpenConversation = findViewById(R.id.btnOpenConversation);
 
         MaterialButton btnMultipleChoice = findViewById(R.id.btnMultipleChoice);
         MaterialButton btnFlashCards = findViewById(R.id.btnFlashCards);
@@ -106,6 +107,7 @@ public class HomeActivity extends AppCompatActivity {
         });
         btnCheckUpdate.setOnClickListener(v -> checkForAppUpdate(true));
         btnOpenChat.setOnClickListener(v -> openChatActivity());
+        btnOpenConversation.setOnClickListener(v -> openConversationActivity());
 
         etApiKey.setText(preferencesManager.getApiKey());
 
@@ -174,6 +176,23 @@ public class HomeActivity extends AppCompatActivity {
 
         Intent intent = new Intent(this, ChatActivity.class);
         intent.putExtra(ChatActivity.EXTRA_INITIAL_PROMPT, prompt);
+        startActivity(intent);
+    }
+
+    private void openConversationActivity() {
+        String apiKey = getCurrentApiKey();
+        if (apiKey.isEmpty()) {
+            showSection(sectionSettings);
+            if (etApiKey != null) {
+                etApiKey.requestFocus();
+                etApiKey.setError(getString(R.string.error_api_key_required));
+            }
+            Toast.makeText(this, R.string.error_api_key_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        preferencesManager.saveApiKey(apiKey);
+        Intent intent = new Intent(this, ChatActivity.class);
         startActivity(intent);
     }
 
