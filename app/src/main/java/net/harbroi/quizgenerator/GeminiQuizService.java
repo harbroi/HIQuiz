@@ -132,6 +132,46 @@ public class GeminiQuizService {
         throw new IOException("All models failed or are currently unavailable.");
     }
 
+    public String sendChatMessage(
+            String apiKey,
+            List<net.harbroi.quizgenerator.ChatMessage> conversation,
+            StatusListener statusListener
+    ) throws IOException {
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new IOException("API key is required.");
+        }
+        if (conversation == null || conversation.isEmpty()) {
+            throw new IOException("Please enter a prompt first.");
+        }
+
+        if (statusListener != null) {
+            statusListener.onStatus("Preparing chat request...");
+        }
+
+        String requestJson = buildChatRequestJson(conversation);
+
+        for (String modelName : MODEL_NAMES) {
+            if (statusListener != null) {
+                statusListener.onStatus("Waiting for Gemini response...");
+            }
+
+            ApiResponse response = executeWithRetry(apiKey, modelName, requestJson);
+            if (response.isSuccessful()) {
+                String output = extractResponseText(response.body).trim();
+                if (!output.isEmpty()) {
+                    return output;
+                }
+                throw new IOException("Gemini returned an empty response.");
+            }
+
+            if (!response.shouldRetrySameModel()) {
+                throw new IOException("Error: " + response.body);
+            }
+        }
+
+        throw new IOException("All models failed or are currently unavailable.");
+    }
+
     private String buildRequestJson(String prompt, List<Uri> fileUris, ContentResolver contentResolver) throws IOException {
         try {
             JSONArray parts = new JSONArray();
@@ -172,6 +212,39 @@ public class GeminiQuizService {
                     .toString();
         } catch (JSONException exception) {
             throw new IOException("Failed to build the request.", exception);
+        }
+    }
+
+    private String buildChatRequestJson(List<net.harbroi.quizgenerator.ChatMessage> conversation) throws IOException {
+        try {
+            JSONArray contents = new JSONArray();
+            for (net.harbroi.quizgenerator.ChatMessage message : conversation) {
+                if (message == null || message.getText().trim().isEmpty()) {
+                    continue;
+                }
+
+                JSONArray parts = new JSONArray()
+                        .put(new JSONObject().put("text", message.getText()));
+
+                contents.put(new JSONObject()
+                        .put("role", message.isUser() ? "user" : "model")
+                        .put("parts", parts));
+            }
+
+            if (contents.length() == 0) {
+                throw new IOException("Please enter a prompt first.");
+            }
+
+            JSONObject generationConfig = new JSONObject()
+                    .put("temperature", 0.7)
+                    .put("responseMimeType", "text/plain");
+
+            return new JSONObject()
+                    .put("contents", contents)
+                    .put("generationConfig", generationConfig)
+                    .toString();
+        } catch (JSONException exception) {
+            throw new IOException("Failed to build the chat request.", exception);
         }
     }
 
@@ -274,7 +347,7 @@ public class GeminiQuizService {
                     ? null
                     : firstPart.optString("text", "");
             if (text == null || text.trim().isEmpty()) {
-                throw new IOException("HIQuiz did not return quiz text.");
+                throw new IOException("HIQuiz did not return a text response.");
             }
             return text;
         } catch (JSONException exception) {

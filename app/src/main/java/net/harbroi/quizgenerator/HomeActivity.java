@@ -50,6 +50,7 @@ public class HomeActivity extends AppCompatActivity {
     private TextView tvEmptyHistory;
     private TextView tvAboutVersion;
     private TextView tvAboutLatestUpdates;
+    private TextInputEditText etHomeGeminiPrompt;
     private boolean updateCheckInProgress;
     private boolean updateCheckCompleted;
     private boolean updateDialogShown;
@@ -70,9 +71,11 @@ public class HomeActivity extends AppCompatActivity {
         tvEmptyHistory = findViewById(R.id.tvEmptyHistory);
         tvAboutVersion = findViewById(R.id.tvAboutVersion);
         tvAboutLatestUpdates = findViewById(R.id.tvAboutLatestUpdates);
+        etHomeGeminiPrompt = findViewById(R.id.etHomeGeminiPrompt);
         TextView tvAiStudioLink = findViewById(R.id.tvAiStudioLink);
         MaterialButton btnSaveApiKey = findViewById(R.id.btnSaveApiKey);
         MaterialButton btnCheckUpdate = findViewById(R.id.btnCheckUpdate);
+        MaterialButton btnOpenChat = findViewById(R.id.btnOpenChat);
 
         MaterialButton btnMultipleChoice = findViewById(R.id.btnMultipleChoice);
         MaterialButton btnFlashCards = findViewById(R.id.btnFlashCards);
@@ -102,6 +105,7 @@ public class HomeActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.api_key_saved, Toast.LENGTH_SHORT).show();
         });
         btnCheckUpdate.setOnClickListener(v -> checkForAppUpdate(true));
+        btnOpenChat.setOnClickListener(v -> openChatActivity());
 
         etApiKey.setText(preferencesManager.getApiKey());
 
@@ -139,6 +143,38 @@ public class HomeActivity extends AppCompatActivity {
         }
         String value = etApiKey.getText() == null ? "" : etApiKey.getText().toString();
         preferencesManager.saveApiKey(value);
+    }
+
+    private void openChatActivity() {
+        String prompt = getTrimmedText(etHomeGeminiPrompt);
+        if (prompt.isEmpty()) {
+            if (etHomeGeminiPrompt != null) {
+                etHomeGeminiPrompt.requestFocus();
+                etHomeGeminiPrompt.setError(getString(R.string.chat_prompt_required));
+            }
+            Toast.makeText(this, R.string.chat_prompt_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String apiKey = getCurrentApiKey();
+        if (apiKey.isEmpty()) {
+            showSection(sectionSettings);
+            if (etApiKey != null) {
+                etApiKey.requestFocus();
+                etApiKey.setError(getString(R.string.error_api_key_required));
+            }
+            Toast.makeText(this, R.string.error_api_key_required, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        preferencesManager.saveApiKey(apiKey);
+        if (etHomeGeminiPrompt != null) {
+            etHomeGeminiPrompt.setError(null);
+        }
+
+        Intent intent = new Intent(this, ChatActivity.class);
+        intent.putExtra(ChatActivity.EXTRA_INITIAL_PROMPT, prompt);
+        startActivity(intent);
     }
 
     private void renderHistory() {
@@ -388,5 +424,20 @@ public class HomeActivity extends AppCompatActivity {
             }
         }
         return builder.toString();
+    }
+
+    private String getTrimmedText(TextInputEditText editText) {
+        return editText == null || editText.getText() == null
+                ? ""
+                : editText.getText().toString().trim();
+    }
+
+    private String getCurrentApiKey() {
+        String typedApiKey = getTrimmedText(etApiKey);
+        if (!typedApiKey.isEmpty()) {
+            return typedApiKey;
+        }
+        String savedApiKey = preferencesManager == null ? "" : preferencesManager.getApiKey();
+        return savedApiKey == null ? "" : savedApiKey.trim();
     }
 }
