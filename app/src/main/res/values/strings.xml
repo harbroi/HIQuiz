@@ -119,7 +119,7 @@ Correct answer: %2$s</string>
     <string name="chat_send_loading">Sending...</string>
     <string name="chat_status_idle">Ready for your next question.</string>
     <string name="chat_status_sending">Sending your prompt...</string>
-    <string name="chat_status_done">AI replied.</string>
+    <string name="chat_status_done">HIQuiz AI replied.</string>
     <string name="chat_prompt_required">Please enter a prompt first.</string>
     <string name="chat_error_prefix">Chat error: %1$s</string>
     <string name="chat_error_unknown">Unknown error</string>

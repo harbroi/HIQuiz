@@ -9,6 +9,8 @@ public class QuizPreferencesManager {
     public static final String PREF_API_KEY = "pref_api_key";
     public static final String PREF_LAST_SEEN_CHANGELOG_VERSION = "pref_last_seen_changelog_version";
     public static final String PREF_QUIZ_HISTORY = "pref_quiz_history";
+    public static final String PREF_CHAT_HISTORY = "pref_chat_history";
+    public static final String PREF_CHAT_DRAFT = "pref_chat_draft";
 
     private final SharedPreferences sharedPreferences;
 
@@ -41,6 +43,24 @@ public class QuizPreferencesManager {
     public String getQuizHistoryJson() {
         String value = sharedPreferences.getString(PREF_QUIZ_HISTORY, "[]");
         return value == null || value.trim().isEmpty() ? "[]" : value;
+    }
+
+    public void saveChatHistoryJson(String json) {
+        sharedPreferences.edit().putString(PREF_CHAT_HISTORY, json == null ? "[]" : json).apply();
+    }
+
+    public String getChatHistoryJson() {
+        String value = sharedPreferences.getString(PREF_CHAT_HISTORY, "[]");
+        return value == null || value.trim().isEmpty() ? "[]" : value;
+    }
+
+    public void saveChatDraft(String draft) {
+        sharedPreferences.edit().putString(PREF_CHAT_DRAFT, draft == null ? "" : draft).apply();
+    }
+
+    public String getChatDraft() {
+        String value = sharedPreferences.getString(PREF_CHAT_DRAFT, "");
+        return value == null ? "" : value;
     }
 }
 

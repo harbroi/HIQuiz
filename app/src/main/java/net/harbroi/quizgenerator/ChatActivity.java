@@ -28,6 +28,9 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class ChatActivity extends AppCompatActivity {
 
     public static final String EXTRA_INITIAL_PROMPT = "extra_initial_prompt";
@@ -73,6 +76,8 @@ public class ChatActivity extends AppCompatActivity {
             String draft = savedInstanceState.getString(STATE_DRAFT, "");
             etChatPrompt.setText(draft);
         } else {
+            restoreConversationFromPreferences();
+            etChatPrompt.setText(preferencesManager.getChatDraft());
             String initialPrompt = getIntent().getStringExtra(EXTRA_INITIAL_PROMPT);
             if (initialPrompt != null && !initialPrompt.trim().isEmpty()) {
                 sendMessage(initialPrompt.trim());
@@ -94,6 +99,7 @@ public class ChatActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        preferencesManager.saveChatDraft(getEditTextValue(etChatPrompt));
         executorService.shutdownNow();
         super.onDestroy();
     }
@@ -102,7 +108,9 @@ public class ChatActivity extends AppCompatActivity {
     protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putSerializable(STATE_MESSAGES, new ArrayList<>(conversation));
-        outState.putString(STATE_DRAFT, getEditTextValue(etChatPrompt));
+        String draft = getEditTextValue(etChatPrompt);
+        outState.putString(STATE_DRAFT, draft);
+        preferencesManager.saveChatDraft(draft);
     }
 
     private void restoreConversation(Bundle savedInstanceState) {
@@ -145,6 +153,7 @@ public class ChatActivity extends AppCompatActivity {
 
         ChatMessage userMessage = ChatMessage.user(prompt);
         conversation.add(userMessage);
+        persistConversation();
         appendMessageBubble(userMessage);
         showEmptyState(false);
         setSending(true, getString(R.string.chat_status_sending));
@@ -160,6 +169,7 @@ public class ChatActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     ChatMessage modelMessage = ChatMessage.model(reply);
                     conversation.add(modelMessage);
+                    persistConversation();
                     appendMessageBubble(modelMessage);
                     setSending(false, getString(R.string.chat_status_done));
                 });
@@ -248,6 +258,47 @@ public class ChatActivity extends AppCompatActivity {
 
     private String getEditTextValue(TextInputEditText editText) {
         return editText == null || editText.getText() == null ? "" : editText.getText().toString();
+    }
+
+    private void persistConversation() {
+        JSONArray array = new JSONArray();
+        for (ChatMessage message : conversation) {
+            if (message == null) {
+                continue;
+            }
+            try {
+                JSONObject item = new JSONObject();
+                item.put("role", message.getRole());
+                item.put("text", message.getText());
+                array.put(item);
+            } catch (Exception ignored) {
+                // Skip malformed entries and keep saving remaining messages.
+            }
+        }
+        preferencesManager.saveChatHistoryJson(array.toString());
+    }
+
+    private void restoreConversationFromPreferences() {
+        conversation.clear();
+        String rawHistory = preferencesManager.getChatHistoryJson();
+        try {
+            JSONArray array = new JSONArray(rawHistory);
+            for (int index = 0; index < array.length(); index++) {
+                JSONObject item = array.optJSONObject(index);
+                if (item == null) {
+                    continue;
+                }
+                String role = item.optString("role", ChatMessage.ROLE_USER);
+                String text = item.optString("text", "").trim();
+                if (!text.isEmpty()) {
+                    conversation.add(new ChatMessage(role, text));
+                }
+            }
+        } catch (Exception ignored) {
+            preferencesManager.saveChatHistoryJson("[]");
+            conversation.clear();
+        }
+        renderConversation();
     }
 
     private CharSequence formatGeminiText(String rawText) {

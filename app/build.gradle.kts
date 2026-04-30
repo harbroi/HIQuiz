@@ -16,8 +16,8 @@ android {
         applicationId = "net.harbroi.quizgenerator"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "2.1.9"
+        versionCode = 11
+        versionName = "2.1.10"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
